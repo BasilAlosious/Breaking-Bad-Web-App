@@ -1,30 +1,56 @@
-import React,{useState,useEffect} from 'react';
+import React,{ Component} from 'react';
 import './App.css';
 import Header from './components/ui/header'
 import Search from './components/ui/Search'
 import CharacterGrid from './components/characters/characterGrid'
-import Axios from 'axios';
-const App=() => {
-  const [items, setItems]= useState([])
-  const[isLoading, setIsLoading]= useState(true)
-  const[query, setQuery]= useState('')
-  useEffect(()=>{
-    const fetchItems = async ()=>{
-      const result = await Axios(`https://www.breakingbadapi.com/api/characters?name=${query}`)
-      console.log(result.data)
-      setItems(result.data)
-      setIsLoading(false)
-    }
-    fetchItems()
-  },[query])
+import {setSearchField} from './components/actions'
+import{connect} from 'react-redux';
 
-  return (
-    <div className="container">
-      <Header/>
-      <Search getQuery={(q) => setQuery(q) }/>
-      <CharacterGrid isLoading={isLoading} items={items} />
-    </div>
-  );
+const mapStateToProps= state =>{
+  return{
+    query: state.query
+  }
 }
+const mapDispatchToProps=(dispatch)=>{
+  return{
+    onSearchChange: (event) => dispatch(setSearchField(event.target.value))
+  }
+  }
+class App extends Component{
+  constructor() {
+    super()
+    this.state = {
+      items: [],
+      isLoading:true,
+      
+    }
+  }
 
-export default App;
+  componentDidMount(){
+      fetch(`https://www.breakingbadapi.com/api/characters?name=${this.props.query}`)
+      .then(response=> response.json())
+      .then(items => {this.setState({ items: items, isLoading:false})});
+  }
+
+  render(){
+    const{items,isLoading}= this.state;
+    const{query,onSearchChange}= this.props
+
+    const filtered = items.filter(robot =>{
+      return robot.name.toLowerCase().includes(query.toLowerCase());
+    })
+
+    return(
+      <div className="container">
+    <Header/>
+    <Search searchChange={onSearchChange }/>
+    <CharacterGrid isLoading={isLoading} items={filtered} />
+  </div>
+    );
+    
+   }
+}
+ 
+
+
+export default connect(mapStateToProps,mapDispatchToProps)(App);
